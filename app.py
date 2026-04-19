@@ -20,10 +20,46 @@ st.set_page_config(
 )
 
 def main():
-    st.sidebar.title("⚙️ 설정")
+    st.sidebar.title("⚙️ 설정 및 백업")
     engine_choice = st.sidebar.radio(
         "시뮬레이션 엔진 선택",
         ["LLM 기반 (소셜/대화형 게임)", "수학적 강화학습 (업데이트 예정)"]
+    )
+    
+    st.sidebar.divider()
+    st.sidebar.subheader("💾 게임 데이터 입출력")
+    
+    # 데이터 불러오기
+    import json
+    uploaded_file = st.sidebar.file_uploader("저장된 게임 파일 불러오기 (.json)", type="json")
+    if uploaded_file is not None:
+        try:
+            data = json.load(uploaded_file)
+            if "messages" in data:
+                st.session_state.messages = data["messages"]
+            if "final_rules" in data:
+                st.session_state.final_rules = data["final_rules"]
+            if "sim_logs_history" in data:
+                st.session_state.sim_logs_history = data["sim_logs_history"]
+            if "analysis_feedback" in data:
+                st.session_state.analysis_feedback = data["analysis_feedback"]
+            st.sidebar.success("성공적으로 불러왔습니다!")
+        except Exception as e:
+            st.sidebar.error("파일 업로드 중 오류가 발생했습니다.")
+            
+    # 데이터 저장하기
+    export_data = {
+        "messages": st.session_state.get("messages", []),
+        "final_rules": st.session_state.get("final_rules", ""),
+        "sim_logs_history": st.session_state.get("sim_logs_history", ""),
+        "analysis_feedback": st.session_state.get("analysis_feedback", "")
+    }
+    json_string = json.dumps(export_data, ensure_ascii=False, indent=2)
+    st.sidebar.download_button(
+        label="📥 현재 작업 내역 저장하기 (.json)",
+        data=json_string,
+        file_name="game_tester_backup.json",
+        mime="application/json"
     )
     
     tab1, tab2 = st.tabs(["💬 게임 규칙 빌더", "📊 시뮬레이션 및 분석"])
