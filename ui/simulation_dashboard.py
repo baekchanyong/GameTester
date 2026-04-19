@@ -1,0 +1,71 @@
+import streamlit as st
+import time
+from core.llm_engine import run_simulation_match, analyze_simulation_results
+
+def render_simulation_dashboard():
+    if "final_rules" not in st.session_state:
+        st.warning("👉 아직 확정된 게임 룰이 없습니다! 좌측의 [💬 게임 규칙 빌더] 탭에서 AI와 대화하며 게임을 먼저 완성해주세요.")
+        return
+        
+    st.write("확정된 게임 규칙을 바탕으로 AI 에이전트들이 시뮬레이션을 진행합니다.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        num_games = st.number_input("시뮬레이션 진행 판수", min_value=1, max_value=50, value=5)
+    with col2:
+        st.write("")
+        st.write("")
+        start_btn = st.button("🚀 시뮬레이션 시작", type="primary")
+        
+    st.divider()
+    
+    # 상태 관리 (진행/중단)
+    if "simulating" not in st.session_state:
+        st.session_state.simulating = False
+    
+    # 멈춤 처리용 변수
+    stop_signal = False
+    
+    if start_btn:
+        st.session_state.simulating = True
+        
+    if st.session_state.simulating:
+        stop_btn = st.button("🛑 중단 (진행된 결과 표시)")
+        if stop_btn:
+            stop_signal = True
+            st.session_state.simulating = False
+            
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        log_box = st.empty()
+        
+        sim_logs_history = ""
+        
+        for i in range(num_games):
+            if stop_signal:
+                status_text.warning("시뮬레이션이 사용자에 의해 중단되었습니다.")
+                break
+                
+            progress_bar.progress((i + 1) / num_games)
+            status_text.text(f"시뮬레이션 진행 중... {i+1}번째 판 진행하며 결과를 도출하는 중입니다. 잠시만 기다려주세요.")
+            
+            # 실제 LLM 시뮬레이션 호출
+            match_result_text = run_simulation_match(st.session_state.final_rules)
+            
+            sim_logs_history += f"### [게임 {i+1} 요약]\n" + match_result_text + "\n\n"
+            
+            # 지난 기록들을 계속 쌓아서 사용자에게 노출
+            with st.expander(f"🎲 [게임 {i+1}] 상세 로그 및 결과 확인", expanded=False):
+                st.markdown(match_result_text)
+            
+        if not stop_signal:
+            progress_bar.progress(1.0)
+            status_text.success("선택한 모든 판수의 테스트가 완료되었습니다!")
+            st.session_state.simulating = False
+            
+        # 1판 이상 진행되었으면 최종 밸런스 분석 실행
+        if sim_logs_history != "":
+            st.subheader("📈 전체 결과 및 밸런스 분석 피드백")
+            with st.spinner("AI가 그동안 진행된 플레이 기록을 분석하여 밸런스 구멍이나 필승법을 찾고 있습니다..."):
+                analysis_feedback = analyze_simulation_results(st.session_state.final_rules, sim_logs_history)
+            st.markdown(analysis_feedback)

@@ -1,6 +1,10 @@
 import streamlit as st
 from dotenv import load_dotenv
 import os
+import sys
+
+# Streamlit Cloud 경로 인식 문제를 방지하기 위해 파일 경로 추가
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # 모듈 임포트 (추후 생성할 파일들)
 from ui.rule_chat import render_rule_builder
