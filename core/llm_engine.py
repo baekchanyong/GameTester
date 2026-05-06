@@ -71,21 +71,27 @@ def stream_chat_response(messages_history):
         transcript += f"사용자: {last_message}\n\n게임 마스터로서 위 내용에 이어질 답변을 스트리밍으로 작성해주세요:"
         
         # 모델명과 관계없이 확실하게 동작하는 generate_content의 단발성 호출 기능 사용
-        response = model.generate_content(transcript, stream=True)
-        # stream 응답 처리
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        response = model.generate_content(transcript, stream=False)
+        # stream 응답 처리 (REST 환경 안정성을 위해 가상 스트리밍)
+        import time
+        if response.text:
+            chunk_size = 5
+            for i in range(0, len(response.text), chunk_size):
+                yield response.text[i:i+chunk_size]
+                time.sleep(0.02)
     except Exception as e:
         yield f"\n[서버 통신 오류가 발생했습니다. 잠시 후 룰 조율을 다시 시도해주세요]\n상세 에러: {str(e)}"
 
 def stream_generate_content(prompt):
     """ 규칙 요약 등 단발성 메시지의 실시간 스트리밍을 위한 Generator """
     try:
-        response = model.generate_content(prompt, stream=True)
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        response = model.generate_content(prompt, stream=False)
+        import time
+        if response.text:
+            chunk_size = 5
+            for i in range(0, len(response.text), chunk_size):
+                yield response.text[i:i+chunk_size]
+                time.sleep(0.02)
     except Exception as e:
         yield f"\n[서버 통신 오류가 발생했습니다. 잠시 후 시도해주세요]\n상세 에러: {str(e)}"
 
@@ -135,10 +141,13 @@ def stream_simulation_match(rules_text):
 주요승인: [문장으로 짧게 요약]
 """
     try:
-        response = model.generate_content(sim_prompt, stream=True)
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        response = model.generate_content(sim_prompt, stream=False)
+        import time
+        if response.text:
+            chunk_size = 5
+            for i in range(0, len(response.text), chunk_size):
+                yield response.text[i:i+chunk_size]
+                time.sleep(0.02)
     except Exception as e:
         yield f"===결과 요약===\n승리팀: 에러발생\n생존역할: 없음\n주요승인: {str(e)}"
 
@@ -160,9 +169,12 @@ def stream_analyze_simulation_results(rules_text, simulation_logs):
 3. 게임을 더 구조적이고 재미있게(혹은 밸런스 있게) 바꾸기 위한 추천 룰 개선안
 """
     try:
-        response = model.generate_content(analyze_prompt, stream=True)
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        response = model.generate_content(analyze_prompt, stream=False)
+        import time
+        if response.text:
+            chunk_size = 5
+            for i in range(0, len(response.text), chunk_size):
+                yield response.text[i:i+chunk_size]
+                time.sleep(0.02)
     except Exception as e:
         yield f"분석 중 에러가 발생했습니다: {str(e)}"
