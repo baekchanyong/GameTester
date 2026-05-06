@@ -15,7 +15,7 @@ if not API_KEY:
         pass
 
 if API_KEY:
-    genai.configure(api_key=API_KEY, transport="rest")
+    genai.configure(api_key=API_KEY)
     
     try:
         # 가용한 모델 중 가장 최신 버전의 flash 모델을 자동 선택 (하드코딩으로 인한 404 에러 방지)
