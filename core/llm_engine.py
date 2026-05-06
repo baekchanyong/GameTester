@@ -23,8 +23,11 @@ if API_KEY:
         # tts, vision, audio 등 특수 목적(할당량 적은) 모델 제외
         base_models = [m for m in available_models if not any(x in m.lower() for x in ['tts', 'vision', 'audio', 'embedding'])]
         
-        # 기본 모델 중 하나 선택 (가장 이름이 짧은 것이 보통 기본 모델)
-        MODEL_NAME = sorted(base_models, key=len)[0] if base_models else "models/gemini-flash"
+        # 1.5-flash가 분당 한도(15회)가 더 넉넉하므로 우선 선택 (2.5-flash는 분당 5회 제한이 걸리는 경우 대비)
+        if any('1.5-flash' in m for m in base_models):
+            MODEL_NAME = "models/gemini-1.5-flash"
+        else:
+            MODEL_NAME = sorted(base_models, key=len)[0] if base_models else "models/gemini-flash"
     except Exception:
         MODEL_NAME = "models/gemini-flash"
 else:
@@ -84,7 +87,10 @@ def stream_chat_response(messages_history):
                 yield response.text[i:i+chunk_size]
                 time.sleep(0.02)
     except Exception as e:
-        yield f"\n[서버 통신 오류가 발생했습니다. 잠시 후 룰 조율을 다시 시도해주세요]\n상세 에러: {str(e)}"
+        if "429" in str(e) or "Quota" in str(e):
+            yield "\n[⚠️ API 무료 할당량을 초과했습니다. 잠시(약 30초~1분) 기다리신 후 다시 입력해주세요!]"
+        else:
+            yield f"\n[서버 통신 오류가 발생했습니다. 잠시 후 룰 조율을 다시 시도해주세요]\n상세 에러: {str(e)}"
 
 def stream_generate_content(prompt):
     """ 규칙 요약 등 단발성 메시지의 실시간 스트리밍을 위한 Generator """
@@ -122,6 +128,8 @@ def extract_current_rules(messages_history):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
+        if "429" in str(e) or "Quota" in str(e):
+            return "[API 할당량 초과 방지를 위해 이번 요약은 생략되었습니다. 채팅을 천천히 입력해주세요.]"
         return f"현재 대화를 요약하는 중 오류가 발생했습니다: {str(e)}"
 
 def stream_simulation_match(rules_text):
