@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 def main():
-    st.sidebar.title("⚙️ 설정 및 백업 (v1.1 적용됨)")
+    st.sidebar.title("⚙️ 설정 및 백업 (v1.2 적용됨)")
     engine_choice = st.sidebar.radio(
         "시뮬레이션 엔진 선택",
         ["LLM 기반 (소셜/대화형 게임)", "수학적 강화학습 (업데이트 예정)"]
