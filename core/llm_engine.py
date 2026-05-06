@@ -20,7 +20,11 @@ if API_KEY:
     try:
         # 가용한 모델 중 가장 최신 버전의 flash 모델을 자동 선택 (하드코딩으로 인한 404 에러 방지)
         available_models = [m.name for m in genai.list_models() if 'flash' in m.name and 'generateContent' in m.supported_generation_methods]
-        MODEL_NAME = available_models[-1] if available_models else "models/gemini-flash" # 가장 최신 버전 혹은 기본 별칭 사용
+        # tts, vision, audio 등 특수 목적(할당량 적은) 모델 제외
+        base_models = [m for m in available_models if not any(x in m.lower() for x in ['tts', 'vision', 'audio', 'embedding'])]
+        
+        # 기본 모델 중 하나 선택 (가장 이름이 짧은 것이 보통 기본 모델)
+        MODEL_NAME = sorted(base_models, key=len)[0] if base_models else "models/gemini-flash"
     except Exception:
         MODEL_NAME = "models/gemini-flash"
 else:
